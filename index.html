@@ -97,6 +97,8 @@
 </div>
 
 <script>
+  let checkInterval = null;
+
   function handleCreateOrder() {
     const accountInfo = document.getElementById('account-info').value.trim();
     const serviceSelect = document.getElementById('service');
@@ -106,33 +108,56 @@
       return;
     }
 
-    // Lấy dịch vụ được chọn và giá tiền
     const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-    const servicePrefix = selectedOption.value; // LK, YT, hoặc SP
+    const servicePrefix = selectedOption.value;
     const amount = parseInt(selectedOption.getAttribute('data-price'));
     const serviceName = selectedOption.text.split(' - ')[0];
 
-    // 1. Tạo ngẫu nhiên mã giao dịch (VD: LK82941, YT12345, SP98765)
+    // Tạo mã giao dịch duy nhất
     const randomCode = servicePrefix + Math.floor(10000 + Math.random() * 90000);
     
-    // 2. Cấu hình ZaloPay
     const bankId = "970454"; // ZaloPay / BVB
     const accountNo = "0702241478"; 
     const accountName = "NGO QUANG HUY";
 
-    // 3. Cập nhật giao diện
+    // Cập nhật giao diện
     document.getElementById('service-display').innerText = serviceName;
     document.getElementById('amount-display').innerText = amount.toLocaleString('vi-VN') + ' VNĐ';
     document.getElementById('order-code').innerText = randomCode;
     document.getElementById('user-display').innerText = accountInfo;
 
-    // 4. Tạo URL VietQR
+    // Tạo VietQR
     const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${randomCode}&accountName=${encodeURIComponent(accountName)}`;
-    
     document.getElementById('qr-code').src = qrUrl;
 
-    // 5. Hiển thị khung thanh toán
     document.getElementById('payment-section').style.display = 'block';
+
+    // Bắt đầu vòng lặp kiểm tra trạng thái thanh toán từ Webhook Vercel
+    startCheckingPayment(randomCode);
+  }
+
+  function startCheckingPayment(code) {
+    if (checkInterval) clearInterval(checkInterval);
+
+    checkInterval = setInterval(async () => {
+      try {
+        // Gọi API Webhook để kiểm tra mã đơn
+        const res = await fetch(`/api/webhook?code=${code}`);
+        const data = await res.json();
+
+        if (data.paid) {
+          clearInterval(checkInterval);
+          alert(`Thanh toán thành công cho mã đơn ${code}! Hệ thống đang kích hoạt dịch vụ...`);
+          
+          // Cập nhật giao diện báo thành công
+          const statusBadge = document.querySelector('.status-badge');
+          statusBadge.innerText = 'Thanh toán thành công!';
+          statusBadge.style.background = '#22c55e';
+        }
+      } catch (err) {
+        console.error("Lỗi khi kiểm tra thanh toán:", err);
+      }
+    }, 3000); // Kiểm tra lại sau mỗi 3 giây
   }
 </script>
 
