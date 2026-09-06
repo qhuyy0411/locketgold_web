@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dịch Vụ Locket Auto</title>
+  <title>Dịch Vụ Locket Gold Auto</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
@@ -20,10 +20,9 @@
     .btn-submit { width: 100%; padding: 14px; background: #f59e0b; color: #0f172a; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; }
     .btn-submit:hover { background: #d97706; }
     
-    /* Area hiển thị thông tin chuyển khoản */
     #payment-section { display: none; margin-top: 24px; padding-top: 20px; border-top: 1px dashed #475569; text-align: center; }
     .qr-box { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin: 12px 0; }
-    .qr-box img { width: 180px; height: 180px; display: block; }
+    .qr-box img { width: 200px; height: 200px; display: block; }
     
     .info-row { background: #0f172a; padding: 10px 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 0.9rem; }
     .info-label { color: #94a3b8; }
@@ -47,13 +46,16 @@
 
   <button class="btn-submit" onclick="handleCreateOrder()">Xác Nhận & Thanh Toán</button>
 
-  <!-- Khung thông tin thanh toán (Ẩn mặc định) -->
   <div id="payment-section">
     <div class="status-badge">Đang chờ nhận tiền...</div>
     
     <div class="qr-box">
-      <!-- Mẫu QR tự động điền số tiền và nội dung bằng VietQR -->
-      <img id="qr-code" src="" alt="Mã QR Chuyển Khoản">
+      <img id="qr-code" src="" alt="Mã QR Chuyển Khoản ZaloPay">
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Chủ tài khoản:</span>
+      <span class="info-value">NGO QUANG HUY</span>
     </div>
 
     <div class="info-row">
@@ -63,16 +65,17 @@
     
     <div class="info-row">
       <span class="info-label">Nội dung CK:</span>
-      <span class="info-value highlight" id="order-code">NAP0000</span>
+      <span class="info-value highlight" id="order-code">LK00000</span>
     </div>
 
     <div class="info-row">
-      <span class="info-label">Tài khoản nhận:</span>
+      <span class="info-label">Tài khoản Locket:</span>
       <span class="info-value" id="user-display">---</span>
     </div>
 
     <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 12px;">
-      * Vui lòng chuyển <strong>đúng nội dung</strong>. Hệ thống sẽ tự động kích hoạt sau 10 - 30 giây khi nhận được tiền.
+      * Quét QR bằng ứng dụng ngân hàng hoặc ZaloPay.<br>
+      * Giữ nguyên <strong>Nội dung CK</strong> để hệ thống tự động kích hoạt.
     </p>
   </div>
 </div>
@@ -86,23 +89,25 @@
       return;
     }
 
-    // 1. Tạo ngẫu nhiên mã nội dung chuyển khoản
+    // 1. Tạo ngẫu nhiên mã giao dịch (VD: LK82941)
     const randomCode = 'LK' + Math.floor(10000 + Math.random() * 90000);
-    const amount = 50000; // Số tiền dịch vụ
+    const amount = 50000;
     
-    // 2. Điền thông tin lên giao diện
+    // 2. Cấu hình thông tin ZaloPay (Nhận tiền Napas247 qua BVB/ZaloPay)
+    const bankId = "970454"; // Mã BIN ngân hàng Bản Việt / ZaloPay
+    const accountNo = "0702241478"; 
+    const accountName = "NGO QUANG HUY";
+
+    // 3. Cập nhật thông tin ra giao diện
     document.getElementById('order-code').innerText = randomCode;
     document.getElementById('user-display').innerText = username;
 
-    // 3. Tạo link QR Code động (Dùng API miễn phí VietQR)
-    // Thay MB / 0123456789 bằng Ngân hàng và STK thực tế của bạn
-    const bankId = "MB"; 
-    const accountNo = "0123456789"; 
-    const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${randomCode}`;
+    // 4. Tạo URL VietQR chuẩn ZaloPay
+    const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.png?amount=${amount}&addInfo=${randomCode}&accountName=${encodeURIComponent(accountName)}`;
     
     document.getElementById('qr-code').src = qrUrl;
 
-    // 4. Hiển thị khung thanh toán
+    // 5. Hiển thị khung thanh toán
     document.getElementById('payment-section').style.display = 'block';
   }
 </script>
