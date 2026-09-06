@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Xử lý kiểm tra trạng thái từ web (GET)
+  // 1. Web gọi lên để kiểm tra xem đơn đã thanh toán chưa (GET)
   if (req.method === 'GET') {
     const { orderCode } = req.query;
     if (orderCode && global.paidOrders.has(orderCode)) {
@@ -24,12 +24,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'PENDING', success: false });
   }
 
-  // Xử lý nhận thông báo từ MacroDroid (POST)
-  if (req.method === 'POST') {
-    const rawData = req.body;
+  // 2. MacroDroid gửi thông báo lên khi có tiền vào (POST hoặc GET qua query)
+  if (req.method === 'POST' || req.method === 'GET') {
+    // Hỗ trợ lấy dữ liệu từ cả Body (POST) hoặc Query URL (GET)
+    const rawData = req.body || req.query;
     let orderText = '';
 
-    // Hứng dữ liệu dù MacroDroid gửi dưới dạng JSON hay Text thô
     if (typeof rawData === 'string') {
       orderText = rawData;
     } else if (rawData && rawData.orderCode) {
