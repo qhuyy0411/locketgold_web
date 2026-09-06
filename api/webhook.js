@@ -1,7 +1,9 @@
-global.paidOrders = global.paidOrders || new Set();
+// Dùng đối tượng toàn cục đơn giản để lưu trữ mã đã thanh toán
+let paidCodesStore = global.paidCodesStore || new Set();
+global.paidCodesStore = paidCodesStore;
 
 export default async function handler(req, res) {
-  // Bật CORS tối đa để không bao giờ bị chặn 401
+  // Bật CORS tối đa
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -15,39 +17,35 @@ export default async function handler(req, res) {
     return;
   }
 
-  // 1. Web gọi lên để kiểm tra xem đơn đã thanh toán chưa (GET)
-  if (req.method === 'GET') {
-    const { orderCode } = req.query;
-    if (orderCode && global.paidOrders.has(orderCode)) {
-      return res.status(200).json({ status: 'SUCCESS', success: true });
-    }
-    return res.status(200).json({ status: 'PENDING', success: false });
+  // 1. NHẬN DỮ LIỆU TỪ MACRODROID (Gửi qua GET hoặc POST)
+  // Hỗ trợ hứng cả ?orderCode=... hoặc truyền toàn bộ nội dung thông báo qua ?orderCode=[not_text] hoặc body
+  const inputData = req.method === 'POST' ? (req.body || {}) : req.query;
+  const rawString = JSON.stringify(inputData);
+
+  // Tìm tất cả các mã có dạng LK theo sau là số (ví dụ: LK1234)
+  const matches = rawString.match(/LK\d+/g);
+  if (matches && matches.length > 0) {
+    matches.forEach(code => {
+      paidCodesStore.add(code.toUpperCase());
+    });
   }
 
-  // 2. MacroDroid gửi thông báo lên khi có tiền vào (POST hoặc GET qua query)
-  if (req.method === 'POST' || req.method === 'GET') {
-    // Hỗ trợ lấy dữ liệu từ cả Body (POST) hoặc Query URL (GET)
-    const rawData = req.body || req.query;
-    let orderText = '';
-
-    if (typeof rawData === 'string') {
-      orderText = rawData;
-    } else if (rawData && rawData.orderCode) {
-      orderText = rawData.orderCode;
+  // 2. TRANG WEB GỌI LÊN ĐỂ KIỂM TRA TRẠNG THÁI
+  const queryCode = req.query.orderCode ? req.query.orderCode.toUpperCase().trim() : '';
+  
+  if (queryCode) {
+    if (paidCodesStore.has(queryCode)) {
+      return res.status(200).json({ status: 'SUCCESS', success: true, matched: queryCode });
     } else {
-      orderText = JSON.stringify(rawData);
+      return res.status(200).json({ status: 'PENDING', success: false, checking: queryCode, storeSize: paidCodesStore.size });
     }
-
-    if (orderText) {
-      const matches = orderText.match(/LK\d+/g);
-      if (matches && matches.length > 0) {
-        matches.forEach(code => global.paidOrders.add(code));
-        return res.status(200).json({ success: true, matchedCodes: matches });
-      }
-    }
-
-    return res.status(200).json({ success: false, message: 'Received but no LK code found', data: rawData });
   }
 
-  return res.status(405).end();
+  // Phản hồi mặc định nếu gọi trống
+  return res.status(200).json({ 
+    success: true, 
+    message: "Webhook is running!", 
+    totalPaidStored: paidCodesStore.size,
+    recentMatched: matches || [] 
+  });
 }
