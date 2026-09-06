@@ -1,163 +1,74 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ Thống Dịch Vụ Tự Động - Locket Gold / Spotify / YouTube</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
-    h2 { text-align: center; color: #38bdf8; margin-bottom: 20px; font-size: 22px; }
-    .service-option { background: #334155; border-radius: 10px; padding: 14px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-    .service-option:hover { background: #475569; border: 1px solid #38bdf8; }
-    .service-title { font-weight: bold; font-size: 16px; }
-    .service-price { color: #4ade80; font-weight: bold; }
-    .btn-pay { width: 100%; background: #0284c7; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-    .btn-pay:hover { background: #0369a1; }
-    
-    /* Modal Thanh Toán */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 20px; }
-    .modal-content { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; position: relative; border: 1px solid #475569; }
-    .close-btn { position: absolute; top: 12px; right: 16px; color: #94a3b8; font-size: 24px; cursor: pointer; }
-    .qr-img { width: 100%; max-width: 250px; border-radius: 12px; margin: 15px 0; background: #fff; padding: 8px; }
-    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 14px; }
-    .highlight { color: #facc15; font-weight: bold; }
-    .status-box { margin-top: 15px; padding: 10px; border-radius: 8px; background: #0284c71a; color: #38bdf8; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .spinner { width: 16px; height: 16px; border: 2px solid #38bdf8; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán Tự Động</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #151b2b; padding: 25px; border-radius: 12px; width: 350px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .qr-box { background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
+        .qr-box img { width: 200px; height: 200px; display: block; }
+        .info { text-align: left; font-size: 14px; margin-bottom: 20px; }
+        .info div { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222b45; padding-bottom: 4px; }
+        .status-box { padding: 12px; border-radius: 6px; font-weight: bold; font-size: 15px; background: #222b45; color: #f39c12; }
+        .status-box.success { background: #27ae60; color: #fff; }
+    </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>Nâng Cấp Dịch Vụ Tự Động</h2>
-    
-    <div class="service-option" onclick="selectService('Locket Gold', 50000)">
-      <span class="service-title">Locket Gold (1 Năm)</span>
-      <span class="service-price">50.000 VNĐ</span>
+    <div class="card">
+        <h3>Quét Mã VietQR MB Bank</h3>
+        <div class="qr-box">
+            <!-- Thay link QR của bạn vào src nếu cần -->
+            <img id="qrImage" src="" alt="QR Code">
+        </div>
+        <div class="info">
+            <div><span>Ngân hàng:</span> <b>MB Bank</b></div>
+            <div><span>Số tài khoản:</span> <b>0702241478</b></div>
+            <div><span>Chủ tài khoản:</span> <b>NGO QUANG HUY</b></div>
+            <div><span>Số tiền:</span> <b style="color: #2ecc71;">50.000 VNĐ</b></div>
+            <div><span>Nội dung CK:</span> <b id="orderCodeText" style="color: #e74c3c;">...</b></div>
+        </div>
+        <div id="statusBox" class="status-box">
+            ⌛ Đang chờ chuyển khoản...
+        </div>
     </div>
 
-    <div class="service-option" onclick="selectService('Spotify Premium', 30000)">
-      <span class="service-title">Spotify Premium (6 Tháng)</span>
-      <span class="service-price">30.000 VNĐ</span>
-    </div>
+    <script>
+        // 1. Tự động sinh mã đơn hàng ngẫu nhiên dạng LKxxxx hoặc lấy từ logic hiện tại của bạn
+        const currentOrderCode = "LK" + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('orderCodeText').innerText = currentOrderCode;
 
-    <div class="service-option" onclick="selectService('YouTube Premium', 40000)">
-      <span class="service-title">YouTube Premium (6 Tháng)</span>
-      <span class="service-price">40.000 VNĐ</span>
-    </div>
+        // 2. Tạo link QR VietQR tự động dựa trên mã và số tiền
+        const qrUrl = `https://img.vietqr.io/image/MB-0702241478-compact2.png?amount=50000&addInfo=${currentOrderCode}&accountName=NGO%20QUANG%20HUY`;
+        document.getElementById('qrImage').src = qrUrl;
 
-    <input type="email" id="userAccount" placeholder="Nhập Email hoặc SĐT tài khoản..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; margin-top: 10px; font-size: 14px;">
+        // 3. Cơ chế Polling gọi lên Vercel kiểm tra trạng thái mỗi 3 giây
+        const webhookCheckUrl = `https://locketgold-web-qhuyy0411.vercel.app/api/webhook?orderCode=${currentOrderCode}`;
 
-    <button class="btn-pay" onclick="handleCheckout()">Thanh Toán Ngay</button>
-  </div>
-
-  <!-- Modal QR Thanh Toán -->
-  <div class="modal" id="paymentModal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModal()">&times;</span>
-      <h3 style="color: #38bdf8;">Quét Mã VietQR MB Bank</h3>
-      
-      <img id="qrImage" class="qr-img" src="" alt="Mã VietQR Thanh Toán">
-
-      <div class="info-row">
-        <span>Ngân hàng:</span>
-        <strong>MB Bank</strong>
-      </div>
-      <div class="info-row">
-        <span>Số tài khoản:</span>
-        <strong id="displayBankNo">0702241478</strong>
-      </div>
-      <div class="info-row">
-        <span>Chủ tài khoản:</span>
-        <strong id="displayBankName">NGO QUANG HUY</strong>
-      </div>
-      <div class="info-row">
-        <span>Số tiền:</span>
-        <strong id="displayAmount" style="color: #4ade80;">0 VNĐ</strong>
-      </div>
-      <div class="info-row">
-        <span>Nội dung CK:</span>
-        <strong id="displayOrderCode" class="highlight">LK----</strong>
-      </div>
-
-      <div class="status-box" id="statusBox">
-        <div class="spinner"></div>
-        <span>Đang chờ chuyển khoản...</span>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Cấu hình thông tin MB Bank
-    const CONFIG = {
-      BANK_BIN: '970422',                           // Mã BIN chuẩn của MB Bank
-      ACCOUNT_NO: '0702241478',                     // Số tài khoản MB Bank của bạn
-      ACCOUNT_NAME: 'NGO QUANG HUY',                // Tên chủ tài khoản
-      API_WEBHOOK: 'https://locketgold-web-qhuyy0411.vercel.app/api/webhook'
-    };
-
-    let selectedService = { name: 'Locket Gold', amount: 50000 };
-    let checkInterval = null;
-
-    function selectService(name, amount) {
-      selectedService = { name, amount };
-      alert(`Đã chọn: ${name} - ${amount.toLocaleString('vi-VN')} VNĐ`);
-    }
-
-    function handleCheckout() {
-      const accountInput = document.getElementById('userAccount').value.trim();
-      if (!accountInput) {
-        alert('Vui lòng nhập Email hoặc SĐT để nhận kích hoạt dịch vụ!');
-        return;
-      }
-
-      // 1. Tạo mã đơn hàng dạng LKxxxx
-      const randomCode = Math.floor(1000 + Math.random() * 9000);
-      const orderCode = `LK${randomCode}`;
-
-      // 2. Tạo đường dẫn ảnh VietQR chuẩn cho MB Bank
-      const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_BIN}-${CONFIG.ACCOUNT_NO}-compact2.png?amount=${selectedService.amount}&addInfo=${orderCode}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
-
-      // 3. Cập nhật giao diện Modal
-      document.getElementById('qrImage').src = qrUrl;
-      document.getElementById('displayBankNo').innerText = CONFIG.ACCOUNT_NO;
-      document.getElementById('displayBankName').innerText = CONFIG.ACCOUNT_NAME;
-      document.getElementById('displayAmount').innerText = selectedService.amount.toLocaleString('vi-VN') + ' VNĐ';
-      document.getElementById('displayOrderCode').innerText = orderCode;
-
-      // 4. Mở Modal
-      document.getElementById('paymentModal').style.display = 'flex';
-
-      // 5. Bắt đầu lắng nghe thông báo thanh toán
-      startCheckingPayment(orderCode);
-    }
-
-    function startCheckingPayment(orderCode) {
-      if (checkInterval) clearInterval(checkInterval);
-
-      checkInterval = setInterval(async () => {
-        try {
-          const res = await fetch(`${CONFIG.API_WEBHOOK}?orderCode=${orderCode}`);
-          const data = await res.json();
-
-          if (data.status === 'SUCCESS' || data.success === true) {
-            clearInterval(checkInterval);
-            document.getElementById('statusBox').style.background = '#22c55e20';
-            document.getElementById('statusBox').style.color = '#22c55e';
-            document.getElementById('statusBox').innerHTML = '🎉 <strong>Thanh toán thành công! Hệ thống đang kích hoạt...</strong>';
-          }
-        } catch (err) {
-          console.error('Lỗi kiểm tra trạng thái thanh toán:', err);
-        }
-      }, 3000);
-    }
-
-    function closeModal() {
-      document.getElementById('paymentModal').style.display = 'none';
-      if (checkInterval) clearInterval(checkInterval);
-    }
-  </script>
+        const checkInterval = setInterval(() => {
+            fetch(webhookCheckUrl, {
+                method: 'GET',
+                mode: 'cors',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'SUCCESS' || data.success === true) {
+                    // Đổi giao diện sang thành công màu xanh lập tức
+                    const statusBox = document.getElementById('statusBox');
+                    statusBox.className = "status-box success";
+                    statusBox.innerHTML = "✔ Thanh toán thành công!";
+                    
+                    // Dừng vòng lặp kiểm tra
+                    clearInterval(checkInterval);
+                }
+            })
+            .catch(err => {
+                console.log('Đang chờ phản hồi từ server...');
+            });
+        }, 3000);
+    </script>
 </body>
 </html>
