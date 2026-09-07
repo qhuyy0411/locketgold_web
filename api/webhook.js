@@ -1,54 +1,36 @@
-let paidCodesStore = global.paidCodesStore || new Set();
-global.paidCodesStore = paidCodesStore;
+// Lưu trữ tạm các mã đơn hàng đã thanh toán thành công (dạng tập hợp để tránh trùng lặp)
+let storedCodes = new Set();
+let lastReceivedMessage = "";
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
+export default function handler(req, res) {
+  // Cho phép CORS để Frontend gọi thoải mái không bị chặn
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
-  // 1. NHẬN DỮ LIỆU TỪ MACRODROID
-  const rawInput = req.method === 'POST' ? JSON.stringify(req.body || {}) : (req.query.orderCode || '');
-  const decodedInput = decodeURIComponent(rawInput);
+  const { orderCode } = req.query;
 
-  // Tìm và lọc mọi mã dạng LK theo sau là số (không phân biệt hoa thường)
-  const matches = decodedInput.match(/LK\d+/gi);
-  if (matches && matches.length > 0) {
-    matches.forEach(code => {
-      paidCodesStore.add(code.toUpperCase().trim());
-    });
-  }
+  // Nếu MacroDroid có truyền nội dung lên
+  if (orderCode) {
+    lastReceivedMessage = orderCode;
 
-  // 2. TRANG WEB GỌI LÊN KIỂM TRA TRẠNG THÁI
-  const queryCode = req.query.orderCode ? req.query.orderCode.toUpperCase().trim() : '';
-
-  // Nếu request chỉ để kiểm tra đơn hàng cụ thể
-  if (queryCode && !queryCode.includes(' ') && queryCode.startsWith('LK')) {
-    if (paidCodesStore.has(queryCode)) {
-      return res.status(200).json({ status: 'SUCCESS', success: true, matched: queryCode });
-    } else {
-      return res.status(200).json({ 
-        status: 'PENDING', 
-        success: false, 
-        checking: queryCode, 
-        storedCodes: Array.from(paidCodesStore) 
+    // Dùng Regex tìm tất cả các chuỗi dạng LK theo sau bởi chữ số (ví dụ: LK1234, lk5678)
+    const matches = orderCode.match(/LK\d+/gi);
+    if (matches) {
+      matches.forEach(code => {
+        storedCodes.add(code.toUpperCase()); // Lưu chuẩn dạng viết hoa
       });
     }
   }
 
-  // Trả về trạng thái tổng quan nếu truy cập trực tiếp webhook
-  return res.status(200).json({ 
-    success: true, 
-    message: "Webhook is active", 
-    storedCodes: Array.from(paidCodesStore),
-    lastReceived: decodedInput 
+  // Trả về danh sách mã đã nhận diện được và tin nhắn gần nhất để debug
+  return res.status(200).json({
+    status: "success",
+    lastReceived: lastReceivedMessage,
+    storedCodes: Array.from(storedCodes)
   });
 }
