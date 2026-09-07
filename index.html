@@ -3,72 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thanh Toán Tự Động</title>
+    <title>Thanh toán tự động Locket Gold</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #151b2b; padding: 25px; border-radius: 12px; width: 350px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .qr-box { background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
-        .qr-box img { width: 200px; height: 200px; display: block; }
-        .info { text-align: left; font-size: 14px; margin-bottom: 20px; }
-        .info div { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222b45; padding-bottom: 4px; }
-        .status-box { padding: 12px; border-radius: 6px; font-weight: bold; font-size: 15px; background: #222b45; color: #f39c12; }
-        .status-box.success { background: #27ae60; color: #fff; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { margin-top: 0; color: #333; }
+        .qr-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px dashed #cbd5e1;
+        }
+        .code-highlight {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            margin: 10px 0;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Trạng thái thành công (Xanh) */
+        .success-box {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #bbf7d0;
+        }
+        .success-box h2 { color: #166534; }
+        .btn-success {
+            display: inline-block;
+            background-color: #22c55e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h3>Quét Mã VietQR MB Bank</h3>
+    <div class="container" id="app-container">
+        <h2>Thanh toán đơn hàng</h2>
+        <p>Quét mã QR bên dưới để chuyển khoản chính xác nội dung:</p>
+        
         <div class="qr-box">
-            <!-- Thay link QR của bạn vào src nếu cần -->
-            <img id="qrImage" src="" alt="QR Code">
+            <!-- Thay link ảnh QR ngân hàng của bạn vào đây -->
+            <img src="https://img.vietqr.io/image/MB-YOUR_ACCOUNT_NUMBER-compact.png?amount=50000&addInfo=LK1234" alt="QR Code" style="max-width: 100%; border-radius: 8px;">
+            <p style="margin: 10px 0 5px; color: #64748b;">Mã chuyển khoản của bạn:</p>
+            <div class="code-highlight" id="order-code-display">LK1234</div>
         </div>
-        <div class="info">
-            <div><span>Ngân hàng:</span> <b>MB Bank</b></div>
-            <div><span>Số tài khoản:</span> <b>0702241478</b></div>
-            <div><span>Chủ tài khoản:</span> <b>NGO QUANG HUY</b></div>
-            <div><span>Số tiền:</span> <b style="color: #2ecc71;">50.000 VNĐ</b></div>
-            <div><span>Nội dung CK:</span> <b id="orderCodeText" style="color: #e74c3c;">...</b></div>
-        </div>
-        <div id="statusBox" class="status-box">
-            ⌛ Đang chờ chuyển khoản...
+
+        <div style="color: #64748b; font-size: 14px;">
+            <div class="spinner"></div> Đang chờ hệ thống xác nhận thanh toán...
         </div>
     </div>
 
     <script>
-        // 1. Tự động sinh mã đơn hàng ngẫu nhiên dạng LKxxxx hoặc lấy từ logic hiện tại của bạn
-        const currentOrderCode = "LK" + Math.floor(1000 + Math.random() * 9000);
-        document.getElementById('orderCodeText').innerText = currentOrderCode;
+        // Mã đơn hàng dành riêng cho phiên giao dịch này (Bạn có thể gen ngẫu nhiên động từ code của bạn)
+        const currentOrderCode = "LK1234";
+        document.getElementById('order-code-display').innerText = currentOrderCode;
 
-        // 2. Tạo link QR VietQR tự động dựa trên mã và số tiền
-        const qrUrl = `https://img.vietqr.io/image/MB-0702241478-compact2.png?amount=50000&addInfo=${currentOrderCode}&accountName=NGO%20QUANG%20HUY`;
-        document.getElementById('qrImage').src = qrUrl;
+        // Thay đổi URL dưới đây bằng domain Vercel thực tế của bạn
+        const WEBHOOK_URL = 'https://locketgold-web-qhuyy0411.vercel.app/api/webhook';
 
-        // 3. Cơ chế Polling gọi lên Vercel kiểm tra trạng thái mỗi 3 giây
-        const webhookCheckUrl = `https://locketgold-web-qhuyy0411.vercel.app/api/webhook?orderCode=${currentOrderCode}`;
-
-        const checkInterval = setInterval(() => {
-            fetch(webhookCheckUrl, {
-                method: 'GET',
-                mode: 'cors',
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'SUCCESS' || data.success === true) {
-                    // Đổi giao diện sang thành công màu xanh lập tức
-                    const statusBox = document.getElementById('statusBox');
-                    statusBox.className = "status-box success";
-                    statusBox.innerHTML = "✔ Thanh toán thành công!";
+        const checkInterval = setInterval(async () => {
+            try {
+                const response = await fetch(WEBHOOK_URL, { mode: 'cors' });
+                const data = await response.json();
+                
+                // Kiểm tra xem mã hiện tại đã nằm trong danh sách thanh toán thành công chưa
+                if (data.storedCodes && data.storedCodes.includes(currentOrderCode)) {
+                    clearInterval(checkInterval); // Dừng vòng lặp quét
                     
-                    // Dừng vòng lặp kiểm tra
-                    clearInterval(checkInterval);
+                    // Biến đổi giao diện thành công màu xanh
+                    document.getElementById('app-container').innerHTML = `
+                        <div class="success-box">
+                            <h2>Thanh toán thành công! 🎉</h2>
+                            <p>Đã nhận được tiền cho mã đơn: <b>${currentOrderCode}</b></p>
+                            <a href="#" class="btn-success">Nhận Locket Gold Ngay</a>
+                        </div>
+                    `;
                 }
-            })
-            .catch(err => {
-                console.log('Đang chờ phản hồi từ server...');
-            });
-        }, 3000);
+            } catch (error) {
+                console.error("Lỗi kết nối đến server:", error);
+            }
+        }, 3000); // Poll mỗi 3 giây
     </script>
 </body>
 </html>
