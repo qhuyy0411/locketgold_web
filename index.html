@@ -25,18 +25,28 @@
             text-align: center;
         }
         h2 { margin-top: 0; color: #333; }
+        .bank-info {
+            font-size: 14px;
+            color: #475569;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
         .qr-box {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 12px;
-            margin: 20px 0;
+            margin: 15px 0;
             border: 1px dashed #cbd5e1;
         }
         .code-highlight {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             color: #2563eb;
             margin: 10px 0;
+            letter-spacing: 1px;
         }
         .spinner {
             border: 3px solid #f3f3f3;
@@ -51,7 +61,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Trạng thái thành công (Xanh) */
         .success-box {
             background-color: #dcfce7;
             color: #166534;
@@ -76,13 +85,19 @@
 
     <div class="container" id="app-container">
         <h2>Thanh toán đơn hàng</h2>
-        <p>Quét mã QR bên dưới để chuyển khoản chính xác nội dung:</p>
+        <p>Quét mã QR bên dưới để thanh toán tự động:</p>
+
+        <div class="bank-info">
+            <div><b>Ngân hàng:</b> MB Bank</div>
+            <div><b>Số tài khoản:</b> 0702241478</div>
+            <div><b>Chủ tài khoản:</b> NGO QUANG HUY</div>
+        </div>
         
         <div class="qr-box">
-            <!-- Thay link ảnh QR ngân hàng của bạn vào đây -->
-            <img src="https://img.vietqr.io/image/MB-YOUR_ACCOUNT_NUMBER-compact.png?amount=50000&addInfo=LK1234" alt="QR Code" style="max-width: 100%; border-radius: 8px;">
-            <p style="margin: 10px 0 5px; color: #64748b;">Mã chuyển khoản của bạn:</p>
-            <div class="code-highlight" id="order-code-display">LK1234</div>
+            <!-- Ảnh QR tự động nạp thông tin và nội dung chuyển khoản -->
+            <img id="qr-image" src="" alt="QR Code" style="max-width: 100%; border-radius: 8px;">
+            <p style="margin: 10px 0 5px; color: #64748b;">Nội dung chuyển khoản (Bắt buộc):</p>
+            <div class="code-highlight" id="order-code-display">Đang tạo mã...</div>
         </div>
 
         <div style="color: #64748b; font-size: 14px;">
@@ -91,35 +106,46 @@
     </div>
 
     <script>
-        // Mã đơn hàng dành riêng cho phiên giao dịch này (Bạn có thể gen ngẫu nhiên động từ code của bạn)
-        const currentOrderCode = "LK1234";
+        // Tự động sinh mã đơn hàng ngẫu nhiên dạng LK + 4 chữ số (Ví dụ: LK9482)
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const currentOrderCode = "LK" + randomNum;
+        
+        // Hiển thị mã lên web
         document.getElementById('order-code-display').innerText = currentOrderCode;
 
-        // Thay đổi URL dưới đây bằng domain Vercel thực tế của bạn
+        // Cấu hình số tiền thanh toán (Ví dụ: 50,000đ - bạn có thể đổi số tiền tùy ý)
+        const amount = 50000;
+
+        // Gắn link VietQR chuẩn xác với thông tin của bạn
+        const qrUrl = `https://img.vietqr.io/image/MB-0702241478-compact.png?amount=${amount}&addInfo=${currentOrderCode}&accountName=NGO%20QUANG%20HUY`;
+        document.getElementById('qr-image').src = qrUrl;
+
+        // URL Webhook trên Vercel của bạn
         const WEBHOOK_URL = 'https://locketgold-web-qhuyy0411.vercel.app/api/webhook';
 
+        // Polling kiểm tra trạng thái mỗi 3 giây
         const checkInterval = setInterval(async () => {
             try {
                 const response = await fetch(WEBHOOK_URL, { mode: 'cors' });
                 const data = await response.json();
                 
-                // Kiểm tra xem mã hiện tại đã nằm trong danh sách thanh toán thành công chưa
+                // Nếu mã của phiên này xuất hiện trong danh sách đã thanh toán
                 if (data.storedCodes && data.storedCodes.includes(currentOrderCode)) {
-                    clearInterval(checkInterval); // Dừng vòng lặp quét
+                    clearInterval(checkInterval); // Dừng vòng lặp
                     
-                    // Biến đổi giao diện thành công màu xanh
+                    // Đổi giao diện sang thành công màu xanh
                     document.getElementById('app-container').innerHTML = `
                         <div class="success-box">
                             <h2>Thanh toán thành công! 🎉</h2>
-                            <p>Đã nhận được tiền cho mã đơn: <b>${currentOrderCode}</b></p>
+                            <p>Đã nhận chuyển khoản cho mã: <b>${currentOrderCode}</b></p>
                             <a href="#" class="btn-success">Nhận Locket Gold Ngay</a>
                         </div>
                     `;
                 }
             } catch (error) {
-                console.error("Lỗi kết nối đến server:", error);
+                console.error("Lỗi kết nối:", error);
             }
-        }, 3000); // Poll mỗi 3 giây
+        }, 3000);
     </script>
 </body>
 </html>
